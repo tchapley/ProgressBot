@@ -1,0 +1,7 @@
+{
+  "name": "ProgressBot",
+  "description": "Discord bot that displays character and guild progress",
+  "image": "heroku/python",
+  "repository": "https://github.com/tchapley/ProgressBot",
+  "keywords": ["python"]
+}
