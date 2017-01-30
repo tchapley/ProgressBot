@@ -1,0 +1,69 @@
+import os
+import requests
+import datetime
+
+class ArtifactPower(object):
+  def __init__(self, rank, name, guild, ap):
+    self.rank = rank
+    self.name = name
+    self.guild = guild
+    self.ap = ap
+
+class MythicPlus(object):
+  def __init__(self, rank, name, guild, score):
+    self.rank = rank
+    self.name = name
+    self.guild = guild
+    self.score = score
+
+class GuildProgress(object):
+  def __init__(self, rank, name, world, progress):
+    self.rank = rank
+    self.name = name
+    self.world = world
+    self.progress = progress
+
+class Rankings(object):
+  def __init__(self, difficulty, best, median, kills, points):
+    self.difficulty = difficulty
+    self.best = best
+    self.median = median
+    self.kills = kills
+    self.points = points
+
+def set_wow_api_key():
+  os.environ['WOWAPI_APIKEY'] = '3tgfhwvjya9h9kpekjdyz45q3uhj2978'
+
+def set_wclogs_api_key():
+  os.environ['WCLOG_APIKEY'] = '4e6b85c57f6b99e30c1e296575957e12'
+
+def get_kill_quantity(json, index):
+  return json['statistics'][index]['quantity']
+
+def get_difficulty(raid, bosses):
+  difficulty = [ "M", "H", "N" ]
+  bosses
+  total = 0
+  for i in range(3):
+    for j in range(bosses):
+      current_boss = (i+j)+((bosses-1)*i)
+      if (raid[current_boss] > 0):
+        total += 1
+    if total > 0:
+      return "{0}/{1}{2}".format(total, bosses, difficulty[i])
+  return "{0}/{1}{2}".format(0, bosses, "N")
+
+def populate_raids(json, raid, bosses, start_index):
+  for i in range(3):
+    for j in range(bosses):
+      raid.append(get_kill_quantity(json, start_index-i+(4*j)))
+
+
+
+def get_time():
+  return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+
+# def has_name_header(self, character):
+#   if (self.name == "h1"):
+#     print(character)
+#   return self.name == "h1" and self.get_text().lower() == character.lower()
