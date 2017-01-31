@@ -182,7 +182,7 @@ async def legendary(name="bresp", realm="boulderfist", region="us"):
 
   payload = ""
   try:
-    payload = WowApi.get_character_profile("us", "boulderfist", "bresp", locale="en_US", fields="achievements,progression")
+    payload = WowApi.get_character_profile(region, realm, name, locale="en_US", fields="achievements,progression")
   except WowApiException as ex:
     print(ex)
     await bot.say(str(ex))
