@@ -6,9 +6,9 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 from util import *
-from wowapi import WowApi
 from wowapi import WowApi, WowApiException, WowApiConfigException
 import datetime
+from killpoints import KillPoints
 
 base_wow_progress = "http://www.wowprogress.com"
 base_wow_armory = "http://us.battle.net/wow/en/character/{0}/{1}/advanced"
@@ -173,6 +173,30 @@ async def guild(guild="dragon+knight", realm="boulderfist", region="us"):
   except Exception as ex:
     print(str(ex))
     await bot.say(str(ex))
+
+@bot.command()
+async def legendary(name="bresp", realm="boulderfist", region="us"):
+  print("\n%s***COMMAND***: legendary command with arguments name=%s realm=%s region=%s"%(get_time(),name, realm, region))
+
+
+
+  payload = ""
+  try:
+    payload = WowApi.get_character_profile("us", "boulderfist", "bresp", locale="en_US", fields="achievements,progression")
+  except WowApiException as ex:
+    print(ex)
+    await bot.say(str(ex))
+    return
+
+  kp = KillPoints(payload)
+  killpoints = kp.get_total_points()
+  legendaries = kp.get_legendary_count(killpoints)
+  till_next = kp.get_points_till_next(killpoints)
+  message = "**{0}** has **{1}** kill points.\n".format(payload['name'], killpoints)
+  message += "They should have **{0} legendaries**\n".format(legendaries)
+  message += "They have **{0} points** until their next legendary".format(till_next)
+
+  await bot.say(message)
 
 @bot.command()
 async def mp(classes="demon_hunter", realm="connected-boulderfist", region="us"):
