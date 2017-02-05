@@ -226,7 +226,7 @@ async def mp(classes="", realm="connected-boulderfist", region="us"):
   url_class = ""
   if classes:
     if classes == "death_knight":
-      classes = string.replace(classes, "_", "")
+      classes = classes.replace("_", "")
     url_class = "class." + classes
 
   url = base_wow_progress + "/mythic_plus_score/{0}/{1}/{2}".format(region, realm, url_class)
@@ -305,7 +305,7 @@ async def rank(name="", spec="", role="dps", realm="boulderfist", region="us"):
 
   print("\n%s***COMMAND***: rank command with arguments name=%s spec=%s role=%s realm=%s region=%s"%(get_current_time(), name, spec, role, realm, region))
 
-  if spec == "":
+  if not spec:
     await bot.say("Please provide a spec to check ranks for")
     return
 
