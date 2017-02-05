@@ -4,6 +4,7 @@ class KillPoints(object):
 
   chest_available = datetime.datetime(2016, 9, 21)
   breakpoints = [194, 578, 1225, 2181, 4800, 9600]
+  percent_till_next = 0
 
   def __init__(self, json):
     self.json = json
@@ -12,11 +13,24 @@ class KillPoints(object):
     for i in range(0, len(self.breakpoints)):
       if self.breakpoints[i] > killpoints:
         return i
+    else:
+      return "more than 5"
+
 
   def get_points_till_next(self, killpoints):
+    points_till_next = None
     for i in range(0, len(self.breakpoints)):
       if self.breakpoints[i] > killpoints:
+        self.percent_till_next = round((killpoints/self.breakpoints[i])*100)
+        print(killpoints)
+        print(self.breakpoints[i])
+        print(self.percent_till_next)
         return self.breakpoints[i] - killpoints
+    else:
+      return "an unknown amount of"
+
+  def get_percent_till_next(self):
+    return self.percent_till_next
 
   def get_timed_points(self):
     killpoints = 0
@@ -68,6 +82,7 @@ class KillPoints(object):
           killpoints += boss['mythicKills'] * 6
 
     return round(killpoints)
+
 
   def get_total_points(self):
     return self.get_timed_points() + self.get_mythic_plus_points() + self.get_raid_points()

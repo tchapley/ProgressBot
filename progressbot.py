@@ -15,6 +15,11 @@ base_wow_armory = "http://us.battle.net/wow/en/character/{0}/{1}/advanced"
 base_wc_logs = "https://www.warcraftlogs.com:443/v1"
 class_array = [ "Warrior", "Paladin", "Hunter", "Rogue", "Priest", "Death Knight",
                 "Shaman", "Mage", "Warlock", "Monk", "Druid", "Demon Hunter" ]
+race_map = {
+  1: "Human", 2: "Orc", 3: "Dwarf", 4: "Night Elf", 5: "Undead", 6: "Tauren",  7: "Gnome",
+  8: "Troll", 9: "Goblin", 10: "Blood Elf", 11: "Draenei", 22: "Worgen",
+  24:"Pandaren", 25:"Pandaren", 26:"Pandaren"
+}
 
 set_wow_api_key()
 set_wclogs_api_key()
@@ -46,7 +51,8 @@ async def exit():
 """
 @bot.command()
 async def ap(classes="", realm="connected-boulderfist", region="us"):
-  print("\n%s***COMMAND***: artifact power command with arguments class=%s realm=%s region=%s"%(get_time(),classes, realm, region))
+
+  print("\n%s***COMMAND***: artifact power command with arguments class=%s realm=%s region=%s"%(get_current_time(),classes, realm, region))
 
   url_class = ""
   if classes:
@@ -88,7 +94,9 @@ async def ap(classes="", realm="connected-boulderfist", region="us"):
 
 @bot.command()
 async def character(name="bresp", realm="boulderfist", region="us"):
-  print("\n%s***COMMAND***: charater command with arguments name=%s realm=%s region=%s"%(get_time(), name, realm, region))
+
+  print("\n%s***COMMAND***: character command with arguments name=%s realm=%s region=%s"%(get_current_time(), name, realm, region))
+
   payload = ""
   try:
     payload = WowApi.get_character_profile(region, realm, name, locale="en_US", fields="achievements,items,statistics")
@@ -99,12 +107,16 @@ async def character(name="bresp", realm="boulderfist", region="us"):
 
   playerName = payload['name']
   level = payload['level']
+  race = race_map[payload['race']]
   playerClass = class_array[payload['class']-1]
+
+  playerRealm = payload['realm']
+  battlegroup = payload['battlegroup']
   itemLevel = payload['items']['averageItemLevelEquipped']
   achievementPoints = payload['achievementPoints']
   artifactPoints = payload['achievements']['criteriaQuantity'][payload['achievements']['criteria'].index(30103)]
   mainLevel = payload['achievements']['criteriaQuantity'][payload['achievements']['criteria'].index(29395)]
-  altLevel = payload['achievements']['criteriaQuantity'][payload['achievements']['criteria'].index(31466)]
+  lastModified = get_time(payload['lastModified'] / 1000)
 
   fifteen = 0
   ten = 0
@@ -141,17 +153,23 @@ async def character(name="bresp", realm="boulderfist", region="us"):
 
   print("Looking for {0} on {1}-{2}".format(name, region, realm))
 
-  message = "**{0}** *{1} {2}*\n".format(playerName, level, playerClass)
-  message += "```css\nItem Level: {0}\nAchievement Points: {1}\n".format(itemLevel, achievementPoints)
-  message += "Artifact Power: {0}\nMain Artifact Level: {1}\n".format(artifactPoints, mainLevel)
-  message += "Alt Artifact Level: {0}\n{1}\n".format(altLevel, mythics)
+  message = "**{0}** *{1} {2} {3}*\n".format(playerName, level, race, playerClass)
+  message += "```css\n"
+  message += "Realm: {0}\n".format(playerRealm)
+  message += "Battlegroup: {0}\n".format(battlegroup)
+  message += "Item Level: {0}\n".format(itemLevel)
+  message += "Achievement Points: {0}\n".format(achievementPoints)
+  message += "Artifact Power: {0}\n".format(artifactPoints)
+  message += "Main Artifact Level: {0}\n".format(mainLevel)
+  message += "{0}\n".format(mythics)
   message += "Raids:\n\tEmerald Nightmare: {0}\n\tTrial of Valor: {1}\n\tNighthold: {2}\n".format(en, tov, nh)
 
-  await bot.say("{0}```\n<{1}>".format(message, base_wow_armory.format(realm, name)))
+  await bot.say("{0}```\nLast Updated: {1}\n<{2}>".format(message, lastModified, base_wow_armory.format(realm, playerName)))
 
 @bot.command()
 async def guild(guild="dragon+knight", realm="boulderfist", region="us"):
-  print("\n%s***COMMAND***: guild command with arguments guild=%s realm=%s region=%s"%(get_time(), guild, realm, region))
+
+  print("\n%s***COMMAND***: guild command with arguments guild=%s realm=%s region=%s"%(get_current_time(), guild, realm, region))
 
   guild = guild.replace("_", "+")
 
@@ -176,9 +194,8 @@ async def guild(guild="dragon+knight", realm="boulderfist", region="us"):
 
 @bot.command()
 async def legendary(name="bresp", realm="boulderfist", region="us"):
-  print("\n%s***COMMAND***: legendary command with arguments name=%s realm=%s region=%s"%(get_time(),name, realm, region))
 
-
+  print("\n%s***COMMAND***: legendary command with arguments name=%s realm=%s region=%s"%(get_current_time(),name, realm, region))
 
   payload = ""
   try:
@@ -192,15 +209,19 @@ async def legendary(name="bresp", realm="boulderfist", region="us"):
   killpoints = kp.get_total_points()
   legendaries = kp.get_legendary_count(killpoints)
   till_next = kp.get_points_till_next(killpoints)
+  percent_till_next = kp.get_percent_till_next()
   message = "**{0}** has **{1}** kill points.\n".format(payload['name'], killpoints)
   message += "They should have **{0} legendaries**\n".format(legendaries)
-  message += "They have **{0} points** until their next legendary".format(till_next)
+  message += "They have **{0} points** until their next legendary\n".format(till_next)
+  message += "They have completed **{0}%** of the progress towards their next legendary".format(percent_till_next)
+
 
   await bot.say(message)
 
 @bot.command()
-async def mp(classes="demon_hunter", realm="connected-boulderfist", region="us"):
-  print("\n%s***COMMAND***: mythic plus command with arguments class=%s realm=%s region=%s"%(get_time(),classes, realm, region))
+async def mp(classes="", realm="connected-boulderfist", region="us"):
+
+  print("\n%s***COMMAND***: mythic plus command with arguments class=%s realm=%s region=%s"%(get_current_time(),classes, realm, region))
 
   url_class = ""
   if classes:
@@ -242,18 +263,65 @@ async def mp(classes="demon_hunter", realm="connected-boulderfist", region="us")
     await bot.say("{0}\n<{1}>".format(str(ex), url))
 
 @bot.command()
-async def rank(name="bresp", spec="vengeance", realm="boulderfist", region="us"):
-  print("\n%s***COMMAND***: rank command with arguments name=%s spec=%s realm=%s region=%s"%(get_time(), name, spec, realm, region))
+async def pvp(name="", realm="boulderfist", region="us"):
+
+  print("\n%s***COMMAND***: pvp command with arguments name=%s realm=%s region=%s"%(get_current_time(), name, realm, region))
+
+  payload = ""
+  try:
+    payload = WowApi.get_character_profile(region, realm, name, locale="en_US", fields="pvp")
+  except WowApiException as ex:
+    print(ex)
+    await bot.say(str(ex))
+    return
+
+  playerName = payload['name']
+  level = payload['level']
+  race = race_map[payload['race']]
+  playerClass = class_array[payload['class']-1]
+  lastModified = get_time(payload['lastModified'] / 1000)
+
+  playerRealm = payload['realm']
+  battlegroup = payload['battlegroup']
+
+  honorableKills = payload['totalHonorableKills']
+  rbgRating = payload['pvp']['brackets']['ARENA_BRACKET_RBG']['rating']
+  twosRating = payload['pvp']['brackets']['ARENA_BRACKET_2v2']['rating']
+  threesRating = payload['pvp']['brackets']['ARENA_BRACKET_3v3']['rating']
+
+  message = "**{0}** *{1} {2} {3}*\n".format(playerName, level, race, playerClass)
+  message += "```css\n"
+  message += "Realm: {0}\n".format(playerRealm)
+  message += "Battlegroup: {0}\n".format(battlegroup)
+  message += "Honorable Kills: {0}\n".format(honorableKills)
+  message += "Rated BG Rating: {0}\n".format(rbgRating)
+  message += "Twos Rating: {0}\n".format(twosRating)
+  message += "Threes Rating: {0}\n".format(threesRating)
+
+  await bot.say("{0}```\nLast Updated: {1}\n<{2}>".format(message, lastModified, base_wow_armory.format(realm, playerName)))
+
+@bot.command()
+async def rank(name="", spec="", role="dps", realm="boulderfist", region="us"):
+
+  print("\n%s***COMMAND***: rank command with arguments name=%s spec=%s role=%s realm=%s region=%s"%(get_current_time(), name, spec, role, realm, region))
+
+  if spec == "":
+    await bot.say("Please provide a spec to check ranks for")
+    return
+
+  if role not in [ 'dps', 'hps', 'krsi' ]:
+    await bot.say("Please provide a valid role. Your options are hps, dps, or krsi")
+    return
 
   stats = {
-    5: { 'kill': 0, 'allstar': 0, 'perf': 0, 'size': 0, 'median': 0},
-    4: { 'kill': 0, 'allstar': 0, 'perf': 0, 'size': 0, 'median': 0},
-    3: { 'kill': 0, 'allstar': 0, 'perf': 0, 'size': 0, 'median': 0}
+    5: { 'kills': 0, 'best': 0, 'average': 0, 'allstar_points': 0, 'size': 0},
+    4: { 'kills': 0, 'best': 0, 'average': 0, 'allstar_points': 0, 'size': 0},
+    3: { 'kills': 0, 'best': 0, 'average': 0, 'allstar_points': 0, 'size': 0}
   }
   character_id = ""
 
   url = base_wc_logs + "/parses/character/{0}/{1}/{2}".format(name, realm, region)
-  page = requests.get(url, {'api_key': os.environ['WCLOG_APIKEY'] })
+  page = requests.get(url, { 'metric': role, 'api_key': os.environ['WCLOG_APIKEY'] })
   print("URL: {0} Status: {1}".format(url, page.status_code))
 
   if page.status_code != 200:
@@ -268,10 +336,12 @@ async def rank(name="bresp", spec="vengeance", realm="boulderfist", region="us")
       for j in range(0, len(i['specs'])):
         character_id = i['specs'][j]['data'][0]['character_id']
         if i['specs'][j]['spec'].lower() == spec.lower():
-          stats[difficulty]['kill'] += len(i['specs'][j]['data'])
-          stats[difficulty]['allstar'] += i['specs'][j]['best_allstar_points']
-          stats[difficulty]['perf'] += i['specs'][j]['best_historical_percent']
-          stats[difficulty]['median'] += i['specs'][j]['historical_median']
+          stats[difficulty]['kills'] += len(i['specs'][j]['data'])
+          historical_percent = i['specs'][j]['best_historical_percent']
+          if historical_percent > stats[difficulty]['best']:
+            stats[difficulty]['best'] = historical_percent
+          stats[difficulty]['average'] += historical_percent
+          stats[difficulty]['allstar_points'] += i['specs'][j]['best_allstar_points']
 
 
 
@@ -281,22 +351,21 @@ async def rank(name="bresp", spec="vengeance", realm="boulderfist", region="us")
       if key == 5: difficulty = "Mythic"
       elif key == 4: difficulty = "Heroic"
       elif key == 3: difficulty = "Normal"
-      kills = stats[key]['kill']
-      allstar = round(stats[key]['allstar'])
+      kills = stats[key]['kills']
+      best = stats[key]['best']
+      average = stats[key]['average']
       size = stats[key]['size']
-      perf = stats[key]['perf']
-      median = stats[key]['median']
       if size != 0:
-        perf = round(perf / size)
-        median = round(median / size)
-      items.append(Rankings(difficulty, perf, median, kills, allstar))
+        average = round(average / size)
+      allstar_points = round(stats[key]['allstar_points'])
+      items.append(Rankings(difficulty, kills, best, average, allstar_points))
 
-    headers = ['difficulty', 'best', 'median', 'kills', 'points']
+    headers = ['difficulty', 'kills', 'best', 'average', 'allstar_points']
     item_lens = [[getattr(item, x) for x in headers] for item in items]
     max_lens = [len(str(max(i, key=lambda x: len(str(x))))) for i in zip(*[headers] + item_lens)]
 
 
-    message = "```css\nLatest rankings for {0} (spec={1}) on {2}-{3}\n".format(name, spec, region, realm)
+    message = "```css\nLatest rankings for {0} (spec={1} role={2}) on {3}-{4}\n".format(name, spec, role, region, realm)
     message += "\t".join('{0:{width}}'.format(x, width=y) for x, y in zip(headers, max_lens)) + '\n'
     for i in items:
       message += "\t".join('{0:{width}}'.format(x, width=y) for x, y in zip([getattr(i, x) for x in headers], max_lens)) + "\n"
@@ -306,7 +375,8 @@ async def rank(name="bresp", spec="vengeance", realm="boulderfist", region="us")
 
 @bot.command()
 async def realm(realm="connected-boulderfist", region="us"):
-  print("\n%s***COMMAND***: realm command with arguments realm=%s region=%s"%(get_time(), realm, region))
+
+  print("\n%s***COMMAND***: realm command with arguments realm=%s region=%s"%(get_current_time(), realm, region))
 
   url = base_wow_progress + "/pve/{0}/{1}".format(region, realm)
   page = requests.get(url)

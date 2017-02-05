@@ -24,12 +24,12 @@ class GuildProgress(object):
     self.progress = progress
 
 class Rankings(object):
-  def __init__(self, difficulty, best, median, kills, points):
+  def __init__(self, difficulty, kills, best, average, allstar_points):
     self.difficulty = difficulty
-    self.best = best
-    self.median = median
     self.kills = kills
-    self.points = points
+    self.best = best
+    self.average = average
+    self.allstar_points = allstar_points
 
 def set_wow_api_key():
   os.environ['WOWAPI_APIKEY'] = '3tgfhwvjya9h9kpekjdyz45q3uhj2978'
@@ -58,12 +58,8 @@ def populate_raids(json, raid, bosses, start_index):
     for j in range(bosses):
       raid.append(get_kill_quantity(json, start_index-i+(4*j)))
 
-
-
-def get_time():
+def get_current_time():
   return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
-# def has_name_header(self, character):
-#   if (self.name == "h1"):
-#     print(character)
-#   return self.name == "h1" and self.get_text().lower() == character.lower()
+def get_time(timestamp):
+  return datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M")
