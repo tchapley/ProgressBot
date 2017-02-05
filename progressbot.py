@@ -45,9 +45,6 @@ async def exit():
 
 """
   Commands Region
-
-  TODO:
-    Figure out how to get "connected" realms from wowprogress
 """
 @bot.command()
 async def ap(classes="", realm="connected-boulderfist", region="us"):
@@ -217,6 +214,33 @@ async def legendary(name="bresp", realm="boulderfist", region="us"):
 
 
   await bot.say(message)
+
+@bot.command()
+async def mounts(name="bresp", mount="", realm="boulderfist", region="us"):
+
+  print("\n%s***COMMAND***: mount command with arguments name=%s mount=%s realm=%s region=%s"%(get_current_time(), name, mount, realm, region))
+
+  payload = ""
+  try:
+    payload = WowApi.get_character_profile(region, realm, name, locale="en_US", fields="mounts")
+  except WowApiException as ex:
+    print(ex)
+    await bot.say(str(ex))
+    return
+  playerName = payload['name']
+
+  if not mount:
+    collected = payload['mounts']['numCollected']
+    await bot.say("**{0}** has collected **{1} mounts**".format(playerName, collected))
+  else:
+    mount.replace("\"", "")
+    for m in payload['mounts']['collected']:
+      if m['name'] == mount:
+        await bot.say("**{0}** has collected **{1}**".format(playerName, m['name']))
+        return
+    else:
+      await bot.say("**{0}** has *not* collected **{1}**".format(playerName, mount))
+
 
 @bot.command()
 async def mp(classes="", realm="connected-boulderfist", region="us"):
