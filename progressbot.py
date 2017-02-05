@@ -216,7 +216,7 @@ async def legendary(name="bresp", realm="boulderfist", region="us"):
   await bot.say(message)
 
 @bot.command()
-async def mounts(name="bresp", mount="", realm="boulderfist", region="us"):
+async def mounts(name="bresp", realm="boulderfist", mount="", region="us"):
 
   print("\n%s***COMMAND***: mount command with arguments name=%s mount=%s realm=%s region=%s"%(get_current_time(), name, mount, realm, region))
 
