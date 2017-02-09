@@ -261,7 +261,7 @@ async def character(name="bresp", realm="boulderfist", region="us"):
 
 @bot.command()
 async def calc(name="bresp", realm="boulderfist", apInLevel=0, region="us"):
-  print("\n%s***COMMAND***: calc command with arguments name=%s realm=%s apInLevel region=%s"%(get_current_time(), name, realm, apInLevel, region))
+  print("\n%s***COMMAND***: calc command with arguments name=%s realm=%s apInLevel=%s region=%s"%(get_current_time(), name, realm, apInLevel, region))
 
   payload = ""
   try:
