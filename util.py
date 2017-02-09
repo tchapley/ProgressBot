@@ -31,6 +31,13 @@ class Rankings(object):
     self.average = average
     self.allstar_points = allstar_points
 
+class Calc(object):
+  def __init__(self, mythic, toNextLevel, to35, toMax):
+    self.mythic = mythic
+    self.toNextLevel = toNextLevel
+    self.to35 = to35
+    self.toMax = toMax
+
 def set_wow_api_key():
   os.environ['WOWAPI_APIKEY'] = '3tgfhwvjya9h9kpekjdyz45q3uhj2978'
 

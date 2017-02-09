@@ -4,11 +4,12 @@ import asyncio
 import logging
 import sys
 import requests
+import datetime
 from bs4 import BeautifulSoup
 from util import *
 from wowapi import WowApi, WowApiException, WowApiConfigException
-import datetime
 from killpoints import KillPoints
+from math import ceil
 
 base_wow_progress = "http://www.wowprogress.com"
 base_wow_armory = "http://us.battle.net/wow/en/character/{0}/{1}/advanced"
@@ -19,6 +20,99 @@ race_map = {
   1: "Human", 2: "Orc", 3: "Dwarf", 4: "Night Elf", 5: "Undead", 6: "Tauren",  7: "Gnome",
   8: "Troll", 9: "Goblin", 10: "Blood Elf", 11: "Draenei", 22: "Worgen",
   24:"Pandaren", 25:"Pandaren", 26:"Pandaren"
+}
+
+artifactLevelCost = {
+  1:  { "cost": 100, "total": 100 },
+  2:  { "cost": 300, "total": 400 },
+  3:  { "cost": 325, "total": 725 },
+  4:  { "cost": 350, "total": 1075 },
+  5:  { "cost": 375, "total": 1450 },
+  6:  { "cost": 400, "total": 1850 },
+  7:  { "cost": 425, "total": 2275 },
+  8:  { "cost": 450, "total": 3250 },
+  9:  { "cost": 525, "total": 3875 },
+  10: { "cost": 625, "total": 4625 },
+  11: { "cost": 750, "total": 4625 },
+  12: { "cost": 875, "total": 5500 },
+  13: { "cost": 1000, "total": 6500 },
+  14: { "cost": 6840, "total": 13340 },
+  15: { "cost": 8830, "total": 22170 },
+  16: { "cost": 11280, "total": 33450 },
+  17: { "cost": 14400, "total": 47850 },
+  18: { "cost": 18620, "total": 66470 },
+  19: { "cost": 24000, "total": 90470 },
+  20: { "cost": 30600, "total": 121070 },
+  21: { "cost": 39520, "total": 160590 },
+  22: { "cost": 50880, "total": 211470 },
+  23: { "cost": 64800, "total": 276270 },
+  24: { "cost": 82500, "total": 358770 },
+  25: { "cost": 105280, "total": 464050 },
+  26: { "cost": 138650, "total": 602700 },
+  27: { "cost": 182780, "total": 785480 },
+  28: { "cost": 240870, "total": 1026350 },
+  29: { "cost": 315520, "total": 1341870 },
+  30: { "cost": 417560, "total": 1759430 },
+  31: { "cost": 546000, "total": 2305430 },
+  32: { "cost": 718200, "total": 3023630 },
+  33: { "cost": 946660, "total": 3970290 },
+  34: { "cost": 1245840, "total": 5216130 },
+  35: { "cost": 1635200, "total": 6851330 },
+  36: { "cost": 1915000, "total": 8766330 },
+  37: { "cost": 2010000, "total": 10776330 },
+  38: { "cost": 2110000, "total": 12886330 },
+  39: { "cost": 2215000, "total": 15101330 },
+  40: { "cost": 2325000, "total": 17426330 },
+  41: { "cost": 2440000, "total": 19866330 },
+  42: { "cost": 2560000, "total": 22426330 },
+  43: { "cost": 2690000, "total": 25116330 },
+  44: { "cost": 2825000, "total": 27941330 },
+  45: { "cost": 2965000, "total": 30906330 },
+  46: { "cost": 3115000, "total": 34021330 },
+  47: { "cost": 3270000, "total": 37291330 },
+  48: { "cost": 3435000, "total": 40726330 },
+  49: { "cost": 3605000, "total": 44331330 },
+  50: { "cost": 3785000, "total": 48116330 },
+  51: { "cost": 3975000, "total": 52091330 },
+  52: { "cost": 4175000, "total": 56266330 },
+  53: { "cost": 4385000, "total": 60651330 },
+  54: { "cost": 4605000, "total": 65256330 }
+}
+
+artifactKnowledge = {
+  0:  1,
+  1:  1.25,
+  2:  1.5,
+  3:  1.9,
+  4:  2.4,
+  5:  3,
+  6:  3.75,
+  7:  4.75,
+  8:  6,
+  9:  7.5,
+  10: 9.5,
+  11: 12,
+  12: 15,
+  13: 18.75,
+  14: 23.5,
+  15: 29.5,
+  16: 37,
+  17: 46.5,
+  18: 58,
+  19: 73,
+  20: 91,
+  21: 114,
+  22: 143,
+  23: 179,
+  24: 224,
+  25: 250
+}
+
+apRewards = {
+  "+2-3": 500,
+  "+4-6": 800,
+  "+7-9": 1000,
+  "10+": 1200,
 }
 
 set_wow_api_key()
@@ -113,6 +207,7 @@ async def character(name="bresp", realm="boulderfist", region="us"):
   achievementPoints = payload['achievementPoints']
   artifactPoints = payload['achievements']['criteriaQuantity'][payload['achievements']['criteria'].index(30103)]
   mainLevel = payload['achievements']['criteriaQuantity'][payload['achievements']['criteria'].index(29395)]
+  knowledge = payload['achievements']['criteriaQuantity'][payload['achievements']['criteria'].index(31466)]
   lastModified = get_time(payload['lastModified'] / 1000)
 
   fifteen = 0
@@ -157,11 +252,68 @@ async def character(name="bresp", realm="boulderfist", region="us"):
   message += "Item Level: {0}\n".format(itemLevel)
   message += "Achievement Points: {0}\n".format(achievementPoints)
   message += "Artifact Power: {0}\n".format(artifactPoints)
-  message += "Main Artifact Level: {0}\n".format(mainLevel)
+  message += "Artifact Knowledge: {0}\n".format(knowledge)
+  message += "Artifact Level: {0}\n".format(mainLevel)
   message += "{0}\n".format(mythics)
   message += "Raids:\n\tEmerald Nightmare: {0}\n\tTrial of Valor: {1}\n\tNighthold: {2}\n".format(en, tov, nh)
 
   await bot.say("{0}```\nLast Updated: {1}\n<{2}>".format(message, lastModified, base_wow_armory.format(realm, playerName)))
+
+@bot.command()
+async def calc(name="bresp", realm="boulderfist", apInLevel=0, region="us"):
+  print("\n%s***COMMAND***: calc command with arguments name=%s realm=%s apInLevel region=%s"%(get_current_time(), name, realm, apInLevel, region))
+
+  payload = ""
+  try:
+    payload = WowApi.get_character_profile(region, realm, name, locale="en_US", fields="achievements")
+  except WowApiException as ex:
+    print(ex)
+    await bot.say(str(ex))
+    return
+
+  playerName = payload['name']
+  mainLevel = payload['achievements']['criteriaQuantity'][payload['achievements']['criteria'].index(29395)]
+  knowledge = payload['achievements']['criteriaQuantity'][payload['achievements']['criteria'].index(31466)]
+  multiplier = artifactKnowledge[knowledge]
+
+  artifactPoints = (artifactLevelCost[mainLevel]['total']+apInLevel)
+  apToLevel = 0
+  apToMax = 0
+  if mainLevel < 54:
+    apToLevel = artifactLevelCost[mainLevel+1]['cost'] - apInLevel
+    apToMax = artifactLevelCost[54]['total'] - artifactPoints
+
+  apTo35 = 0
+  if mainLevel < 35:
+    apTo35 = artifactLevelCost[35]['total'] - artifactPoints
+
+  rows = []
+  for reward in apRewards:
+    scaledReward = apRewards[reward] * multiplier
+    toLevel = ceil(apToLevel / scaledReward)
+    to35 = ceil(apTo35 / scaledReward)
+    toMax = ceil(apToMax / scaledReward)
+    rows.append(Calc(reward, toLevel, to35, toMax))
+
+  # print("Looking for {0} on {1}-{2}".format(name, region, realm))
+
+  message = "```css\n"
+  message += "Total AP: {0}\n".format(artifactPoints)
+  message += "Artifact Level: {0}\n".format(mainLevel)
+  message += "Artifact Knowledge: {0}\n".format(knowledge)
+  message += "AP in level: {0}\n".format(apInLevel)
+  message += "AP to next level: {0}\n".format(apToLevel)
+  message += "AP to 54: {0}\n\n".format(apToMax)
+
+  headers = ['mythic', 'toNextLevel', 'to35', 'toMax']
+  item_lens = [[getattr(row, x) for x in headers] for row in rows]
+  max_lens = [len(str(max(i, key=lambda x: len(str(x))))) for i in zip(*[headers] + item_lens)]
+
+  message += "\t".join('{0:{width}}'.format(x, width=y) for x, y in zip(headers, max_lens)) + '\n'
+  for i in rows:
+    message += '\t'.join('{0:{width}}'.format(x, width=y) for x, y in zip([getattr(i, x) for x in headers], max_lens)) + "\n"
+
+  await bot.say("{0}\n```".format(message))
 
 @bot.command()
 async def guild(guild="dragon+knight", realm="boulderfist", region="us"):
@@ -235,7 +387,7 @@ async def mounts(name="bresp", realm="boulderfist", mount="", region="us"):
   else:
     mount.replace("\"", "")
     for m in payload['mounts']['collected']:
-      if m['name'] == mount:
+      if m['name'].lower() == mount.lower() :
         await bot.say("**{0}** has collected **{1}**".format(playerName, m['name']))
         return
     else:
@@ -435,3 +587,4 @@ async def whoisyourmaster():
   await bot.reply("you are")
 
 bot.run('MjczNTgyNTAwNTk1MzY3OTM2.C2lq3A.imEczu1BMAqrOYJfZEBTPJavOvc')
+
