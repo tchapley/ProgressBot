@@ -1,6 +1,6 @@
 discord.py==0.16.5
 aiohttp==1.0.5
 beautifulsoup4==4.5.3
-lxml==3.7.2
+lxml==4.6.3
 python-wowapi==1.0
 requests>=2.20.0
